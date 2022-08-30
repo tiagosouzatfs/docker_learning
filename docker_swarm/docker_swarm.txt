@@ -1,0 +1,78 @@
+Orquestração é o ato de conseguir gerenciar e escalar os containers da aplicação.
+Ou seja, Tem-se um serviço que gerencia outros serviços.
+
+O docker swarm é uma ferramenta do docker para orquestrar containers. Podendo escalar horizontalmente (cluster).
+Os comandos são muito parecidos com os do docker. A intalação do docker já vem com o swarm, porém desabilitado.
+
+Nodes: é uma instância (máquina) que participa do Swarm
+Manager Node: (Máquina) Node que gerencia os demais Nodes
+Worker Node: Nodes que trabalham em função do Manager
+Service: Um conjunto de Tasks que o Manager Node manda o Work Node executar
+Task: comandos que são executados nos Nodes
+
+Lembrar de colocar seu usuário no grupo docker, senão tem que lembrar sempre de escrever o sudo.
+
+Comando para iniciar o docker swarm -> sudo docker swarm init 
+* a primeira máquina criada já vira um Manager Node 
+
+Ao executar o docker swarm init, ele já mostra o comando para executar no workers (nodes) para se conectarem
+a rede do docker swarm do node manager, esse comando abaixo:
+Para adicionar novos nodes -> docker swarm join --token <TOKEN> <IP>:<PORTA>
+Dessa forma duas ou mais máquinas entram na hierarquia como WORKERS (nodes) e toda ação (Tasks) utilizadas no manager, serão
+replicadas em Nodes que foram adicionados com o join.
+
+Para resgatar o comando docker swarm join já com o token para adicionarmos novos nodes -> docker swarm join-token manager
+
+Uma vez iniciado o docker swarm podemos para os nodes através do comando -> sudo docker swarm leave
+
+Se só tiver um node, ao remover temos que forçar através da flag -f, pois ele vai dar um erro,
+informando que por haver apenas um node ele é o Manager Node -> sudo docker swarm leave -f 
+
+Ás vezes é necessário em raros casos, dependendo do ambiente que se usa o docker swarm, tem que 
+especificar qual é o ip da máquina que está gerenciando o docker swarm e passar a flag específica
+para isso -> sudo docker swarm init --advertise-addr ip_da_máquina 
+*Usei esse comando acima, no laboratório de estudo de docker swarm no "docker labs" ou também pode ser usado quando nosso 
+node manager funcionará com algum serviço que precise de um ip explícito, como por exemplo, instalar um servidor web, 
+que vai precisar digitar o ip na barra de navegação para acessar a aplicação.
+
+Listar todos os nodes do docker swarm -> docker node ls (o node que aparecer com o status leader é o node manager)
+
+Podemos adicionar um serviço com o comando -> docker service create --name <nome do container> <imagem>
+Dessa forma teremos um container novo sendo adicionado ao manager e este serviço estará sendo gerenciado pelo
+docker swarm.
+
+Listar os serviços que estão rodando -> docker service ls (esses comandos são executados no node manager)
+
+Para remover os serviços no docker swarm -> docker service rm <nome ou id do container>
+
+Podemos adicionar um serviço com replica em outros nodes (agora de fato com o número de réplicas mais do que 1 temos 
+a orquestração) com o comando -> docker service create --name <nome do container> --replicas <número> <imagem>
+Dessa forma teremos um container novo sendo adicionado ao manager e este serviço estará sendo gerenciado pelo
+docker swarm. Exemplo real: -> docker service create --name neginxreplicas --replicas 3 -p 80:80 nginx
+
+Verificar informações no docker swarm - > docker info
+
+Inspecionar os serviços no node manager ->  docker service inspect <id do serviço -> docker service ls>
+
+Verificar os estados dos serviços no docker swarm -> docker service ps <id do serviço -> docker service ls>
+
+Remover um node no docker swarm -> docker node rm <id do node>, e para ver se deu certo é só verificar no node manager o número
+de réplicas com o comando -> docker node ls
+
+O docker swarm também roda docker compose -> docker stack deploy -c <arquivo.yaml> <nome do serviço>
+
+Para escalar o serviço e aumentar o número de réplicas, vamos no node manager -> docker service scale <nome do serviço=número de réplicas>
+
+Node parar de receber tasks (ações do node manager) -> docker node update --availlability drain <id do serviço> se substituir o 
+parâmetro drain pelo active volta ao normal as Tasks.
+
+Para atualizar a imagem dos containers envolvidos no docker swarm -> docker service update --image <imagem:versão> <id do serviço>
+
+Criação de redes no swarm, serve para isolar serviços, pq se não criamros uma rede todos os nodes conversaram normalmente na rede defaut 
+do swarm do primeiro serviço criado, aí quando vc for criar outro serviço vc especifica a rede, isolando os serviços
+ -> docker network create --driver overlay <nomde da rede que você quer dar>
+ -> docker service create --name nginxreplicas --replicas 3 -p 80:80 --network <nome da rede que vc deu> nginx,
+ 
+Conectar serviço a uma rede de outro serviço já criada -> docker service update --network-add swarm <id do serviço> 
+ 
+ 

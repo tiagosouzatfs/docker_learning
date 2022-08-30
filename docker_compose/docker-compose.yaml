@@ -1,0 +1,29 @@
+version: '3.3'
+
+services:
+  db: #container de MySQL
+    image: mysql:5.7 #imagem docker
+    volumes:  #declaração de volume
+      - db_data:/var/lib/mysql #nome do volume e o caminho que o volume estará salvo
+    restart: always #manterá o arquivo sempre atualizado
+    environment: #variáveis de ambiente
+      MYSQL_ROOT_PASSWORD: wordpress
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: tiago
+      MYSQL_PASSWORD: secret
+  
+  wordpress: #container wordpress
+    depends_on: #dependência para o container
+      - db
+    image: wordpress:latest
+    ports: #expondo as portas
+      - "8000:80"
+    restart: always
+    environment:
+      WORDPRESS_DB_HOST: db:3306 #tem que declarar a porta do serviço junto, nesse caso a do mysql
+      WORDPRESS_DB_USER: tiago
+      WORDPRESS_DB_PASSWORD: secret
+      WORDPRESS_DB_NAME: wordpress
+
+volumes: #somos obrigados a declarar todos os volumes da apicação se não, não vai funcionar
+  db_data: {} #declara dessa forma
